@@ -7,6 +7,7 @@ The code implements algorithms that optimize functions of matrices with orthonor
 A Stiefel manifold $\mathsf{St}(n,m)$ is the set of all $n\text{-by-}m$ matrices satisfying $X^\top X=I$, where $n\ge m$. Stiefel optimization is the process of finding the minimum value of a function $f(X)$ on the Stiefel manifold, i.e.,
 $$\min_{X \in \mathsf{St}(n,m)} f(X)=\min_{X \in \mathbb{R}^{n \times m}, s.t. X^\top X=I} f(X),\qquad n\ge m.$$
 In other words, if you are trying to optimize a function under orthonormal constraints, then you are in the right place. Our optimizers `StiefelSGD` and `SteifelAdam` in `StiefelOptimizers.py` can be easily applied to your own idea.
+
 ![Demo](./demo.gif)
 
 Here are some examples for Stiefel optimization.
