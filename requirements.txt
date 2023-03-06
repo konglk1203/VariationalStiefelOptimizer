@@ -1,0 +1,11 @@
+einops==0.4.1
+matplotlib==3.5.1
+nested_dict==1.61
+numpy==1.22.3
+pandas==1.4.2
+Pillow==9.4.0
+POT==0.8.1.0
+pytorch_lightning==1.7.0
+scipy==1.8.0
+torch==1.11.0+cu113
+torchvision==0.12.0
