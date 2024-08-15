@@ -57,35 +57,23 @@ class MomentumlessStiefelSGD(Optimizer):
             for p_raw in group['params']:
                 if p_raw.grad is None:
                     continue
-                p=p_raw.view(p_raw.size()[0],-1)
-                p_grad=p_raw.grad.view(p_raw.size()[0],-1)
-                if p.shape[0]<p.shape[1]:
-                    p=p.transpose(0,1)
-                    p_grad=p_grad.transpose(0,1)
-                    # print(torch.max(p_grad))
-                    transposed=True
-                else:
-                    transposed=False
-                
-                n,m=p.shape
+                p=p_raw.view(-1, p_raw.shape[-2], p_raw.shape[-1])
+                p_grad=p_raw.grad.view(-1, p_raw.shape[-2], p_raw.shape[-1])
+                if p.shape[-2]<p.shape[-1]:
+                    p=p.transpose(-2,-1)
+                    p_grad=p_grad.transpose(-2,-1)
+                    # print(torch.max(p_grad))                
+                n,m=p.shape[-2], p.shape[-1]
                 # print(p_grad)
                 param_state = self.state[p_raw]
                 
 
                 
                 if 2*m < n:
-                    U = torch.cat((p_grad, p), dim=1)
-                    V = torch.cat((p, -p_grad), dim=1)
-                    p.copy_(p - lr * U@ torch.linalg.inv(torch.eye(2*m, dtype=p.dtype, device=p.device)+lr/2*V.T@U) @(V.T@p))
+                    U = torch.cat((p_grad, p), dim=2)
+                    V = torch.cat((p, -p_grad), dim=2)
+                    p.add_( - lr * torch.bmm(torch.bmm(U, torch.linalg.inv(torch.eye(2*m, dtype=p.dtype, device=p.device)+lr/2*torch.bmm(V.transpose(-2,-1), U))), torch.bmm(V.transpose(-2,-1), p)))
                 else:
-                    W = p @ p_grad.T - p_grad @ p.T
-                    p.copy_(torch.linalg.inv(torch.eye(n, dtype=p.dtype, device=p.device)+lr/2*W)@(torch.eye(n, dtype=p.dtype, device=p.device)-lr/2*W) @p)
-
-
-                if transposed:
-                    p_raw.copy_(p.transpose(0,1).reshape(p_raw.shape))
-                else:
-                    p_raw.copy_(p.reshape(p_raw.shape))
-
-
+                    W = torch.bmm(p, p_grad.T) - torch.bmm(p_grad , p.T)
+                    p.copy_(torch.bmm(torch.bmm(torch.linalg.inv(torch.eye(n, dtype=p.dtype, device=p.device)+lr/2*W), (torch.eye(n, dtype=p.dtype, device=p.device)-lr/2*W), p)))
         return loss

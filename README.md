@@ -84,7 +84,7 @@ Please check the folder ProjectionRobustWasserstein. Run [test_mnist.py](test_mn
 ### Vision Transformer (ViT)
 Please check the folder ViT. Run [ViT_main.py](ViT_main.py) and use arguments `--label-smoothing` and `--autoaugment` for every optimizer, constraint and dataset. For example: 
 ```
-python ViT_main.py --optim-method StiefelSGD --dataset c10 --constraint OnlyWithin --label-smoothing --autoaugment
+python ViT_main.py --optim-method StiefelSGD --dataset c10 --constraint OnlyWithin
 ```
 
 - `optim-method` should be chosen from `['SGD','Adam','RegularizerStiefelSGD', 'RegularizerStiefelAdam', 'ProjectedStiefelSGD', 'ProjectedStiefelAdam', 'StiefelSGD', 'StiefelAdam', 'MomentumlessStiefelSGD']`

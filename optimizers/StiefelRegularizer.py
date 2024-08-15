@@ -61,10 +61,10 @@ class RegularizerStiefelSGD(Optimizer):
             for p in group['params']:
                 if p.grad is not None:
                     params_with_grad.append(p)
-                    p_reshape=p.reshape(p.shape[0], -1)
-                    if p_reshape.shape[0]>=p_reshape.shape[1]:
-                        p_reshape=(1+stiefel_regularizer)*p_reshape-stiefel_regularizer*(p_reshape@(p_reshape.t()@p_reshape))
-                    p.copy_(p_reshape.view(p.shape))
+                    p_reshape=p.reshape(-1, p.shape[-2], p.shape[-1])
+                    if p_reshape.shape[-2]<p_reshape.shape[-1]:
+                        p_reshape=p_reshape.transpose(-2, -1)
+                    p_reshape.copy_((1+stiefel_regularizer)*p_reshape-stiefel_regularizer*torch.bmm(p_reshape, torch.bmm(p_reshape.transpose(-2, -1), p_reshape)))
                     d_p_list.append(p.grad)
 
                     state = self.state[p]
@@ -141,10 +141,10 @@ class RegularizerStiefelAdam(Optimizer):
             for p in group['params']:
                 if p.grad is not None:
                     params_with_grad.append(p)
-                    p_reshape=p.reshape(p.shape[0], -1)
-                    if p_reshape.shape[0]>=p_reshape.shape[1]:
-                        p_reshape=(1+stiefel_regularizer)*p_reshape-stiefel_regularizer*(p_reshape@(p_reshape.t()@p_reshape))
-                    p.copy_(p_reshape.view(p.shape))
+                    p_reshape=p.reshape(-1, p.shape[-2], p.shape[-1])
+                    if p_reshape.shape[-2]<p_reshape.shape[-1]:
+                        p_reshape=p_reshape.transpose(-2, -1)
+                    p_reshape.copy_((1+stiefel_regularizer)*p_reshape-stiefel_regularizer*torch.bmm(p_reshape, torch.bmm(p_reshape.transpose(-2, -1), p_reshape)))
                     if p.grad.is_sparse:
                         raise RuntimeError('Adam does not support sparse gradients, please consider SparseAdam instead')
                     grads.append(p.grad)
@@ -152,7 +152,7 @@ class RegularizerStiefelAdam(Optimizer):
                     state = self.state[p]
                     # Lazy state initialization
                     if len(state) == 0:
-                        state['step'] = 0
+                        state['step'] = torch.zeros(1)
                         # Exponential moving average of gradient values
                         state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
                         # Exponential moving average of squared gradient values

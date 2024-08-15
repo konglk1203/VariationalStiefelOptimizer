@@ -1,10 +1,11 @@
 # --------------------------
 # Slightly modified from https://github.com/lucidrains/vit-pytorch
-# Used for `orthogonality across heads' case
+# Used for `orthogonality only within each head' case and `no constraint' case
 # --------------------------
 
 import torch
 from torch import nn
+device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
@@ -41,17 +42,19 @@ class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0.):
         super().__init__()
         inner_dim = dim_head *  heads
-        assert inner_dim==dim
         project_out = not (heads == 1 and dim_head == dim)
 
         self.heads = heads
-        self.scale = dim_head ** -0.5
         self.dim_head=dim_head
+        self.scale = dim_head ** -0.5
 
         self.attend = nn.Softmax(dim = -1)
-        self.q = nn.Linear(dim, inner_dim, bias = False)
-        self.k = nn.Linear(dim, inner_dim, bias = False)
-        self.v = nn.Linear(dim, inner_dim, bias = False)
+        # Here is the recommanded modification.
+        # We use a list of matrices q and k instead concatenated large q and k.
+        # Each of the matrices in q_list and k_list is Stiefel (has orthonormal columns)
+        self.q_list=nn.ModuleList([nn.Linear(dim, dim_head, bias = False) for _ in range(heads)])
+        self.k_list=nn.ModuleList([nn.Linear(dim, dim_head, bias = False) for _ in range(heads)])
+        self.v=nn.Linear(dim, inner_dim, bias = False)
 
         self.to_out = nn.Sequential(
             nn.Linear(inner_dim, dim),
@@ -60,8 +63,8 @@ class Attention(nn.Module):
 
     def forward(self, x):
         b,n=x.shape[0:2]
-        q=self.q(x).reshape(b,n,self.heads,self.dim_head).transpose(2,1)
-        k=self.k(x).reshape(b,n,self.heads,self.dim_head).transpose(2,1)
+        q=torch.cat([q_map(x).unsqueeze(1) for q_map in self.q_list], dim=1)
+        k=torch.cat([k_map(x).unsqueeze(1) for k_map in self.k_list], dim=1)
         v=self.v(x).reshape(b,n,self.heads,self.dim_head).transpose(2,1)
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
@@ -87,7 +90,7 @@ class Transformer(nn.Module):
             x = ff(x) + x
         return x
 
-class ViT_square(nn.Module):
+class ViT_non_vectorized(nn.Module):
     def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.):
         super().__init__()
         image_height, image_width = pair(image_size)

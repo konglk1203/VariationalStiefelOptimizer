@@ -8,7 +8,7 @@ class _RequiredParameter(object):
 required = _RequiredParameter()
 
 
-def matrix_square_root(mat_a, mat_a_size, iter_count=100, ridge_epsilon=1e-4, max_inner_iter=100):
+def matrix_square_root(mat_a, mat_a_size, iter_count=100, ridge_epsilon=1e-4):
   """
   Stable iterations for the matrix square root, Nicholas J. Higham
   Page 231, Eq 2.6b
@@ -16,10 +16,6 @@ def matrix_square_root(mat_a, mat_a_size, iter_count=100, ridge_epsilon=1e-4, ma
 
   Modified from TensorFlow implementation of https://www.tensorflow.org/api_docs/python/tf/linalg/sqrtm
   """
-  def _iter_condition(i, unused_mat_y, unused_old_mat_y, unused_mat_z,
-                      unused_old_mat_z, err, old_err):
-    # This method require that we check for divergence every step.
-    return i < iter_count and err < old_err
 
   def _iter_body(i, mat_y, unused_old_mat_y, mat_z, unused_old_mat_z, err,
                  unused_old_err):
@@ -41,7 +37,7 @@ def matrix_square_root(mat_a, mat_a_size, iter_count=100, ridge_epsilon=1e-4, ma
   init_err = norm
 
   func_input=[0, mat_init_y, mat_init_y, mat_init_z, mat_init_z, init_err, init_err + 1.0]
-  while _iter_condition(*func_input):
+  for _ in range(iter_count):
     func_input=_iter_body(*func_input)
   return func_input[2] * torch.sqrt(norm), func_input[4] / torch.sqrt(norm)
 def matrix_root(A):

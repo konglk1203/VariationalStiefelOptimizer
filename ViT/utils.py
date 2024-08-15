@@ -4,7 +4,6 @@ import torchvision.transforms as transforms
 
 from autoaugment import CIFAR10Policy, SVHNPolicy
 from criterions import LabelSmoothingCrossEntropyLoss
-from da import RandomCropPaste
 
 def get_criterion(args):
     if args.criterion=="ce":
@@ -18,39 +17,39 @@ def get_criterion(args):
     return criterion
 
 def get_model(args):        
-    from ViT import ViT
-    net = ViT(
-        channels=args.in_c, 
-        num_classes=args.num_classes, 
-        image_size=args.size, 
-        patch_size=args.size//args.patch, 
-        dropout=args.dropout, 
-        mlp_dim=args.mlp_hidden,
-        depth=args.num_layers,
-        dim=args.hidden,
-        heads=args.head,
-        dim_head=args.hidden//args.head,
-        pool='cls'
-    )
-    return net
-
-
-def get_model_square(args):        
-    from ViT_square import ViT_square
-    net = ViT_square(
-        channels=args.in_c, 
-        num_classes=args.num_classes, 
-        image_size=args.size, 
-        patch_size=args.size//args.patch, 
-        dropout=args.dropout, 
-        mlp_dim=args.mlp_hidden,
-        depth=args.num_layers,
-        dim=args.hidden,
-        heads=args.head,
-        dim_head=args.hidden//args.head,
-        pool='cls'
+    from ViT_non_vectorized import ViT_non_vectorized
+    if args.constraint=='OnlyWithin' and args.optim_method in ['ProjectedStiefelSGD', 'ProjectedStiefelAdam']:
+        net = ViT_non_vectorized(
+            channels=args.in_c, 
+            num_classes=args.num_classes, 
+            image_size=args.size, 
+            patch_size=args.size//args.patch, 
+            dropout=args.dropout, 
+            mlp_dim=args.mlp_hidden,
+            depth=args.num_layers,
+            dim=args.hidden,
+            heads=args.head,
+            dim_head=args.hidden//args.head,
+            pool='cls'
+        )
+    else:
+        from ViT import ViT
+        net = ViT(
+            channels=args.in_c, 
+            num_classes=args.num_classes, 
+            image_size=args.size, 
+            patch_size=args.size//args.patch, 
+            dropout=args.dropout, 
+            mlp_dim=args.mlp_hidden,
+            depth=args.num_layers,
+            dim=args.hidden,
+            heads=args.head,
+            dim_head=args.hidden//args.head,
+            pool='cls',
+            constraint=args.constraint
         )
     return net
+
 
 def get_transform(args):
     train_transform = []
@@ -121,20 +120,3 @@ def get_dataset(args):
         raise NotImplementedError(f"{args.dataset} is not implemented yet.")
     
     return train_ds, test_ds
-
-def get_experiment_name(args):
-    experiment_name = f"{args.model_name}_{args.dataset}"
-    if args.autoaugment:
-        experiment_name+="_aa"
-    if args.label_smoothing:
-        experiment_name+="_ls"
-    if args.rcpaste:
-        experiment_name+="_rc"
-    if args.cutmix:
-        experiment_name+="_cm"
-    if args.mixup:
-        experiment_name+="_mu"
-    if args.off_cls_token:
-        experiment_name+="_gap"
-    print(f"Experiment:{experiment_name}")
-    return experiment_name
