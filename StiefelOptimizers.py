@@ -239,8 +239,8 @@ class StiefelAdam(Optimizer):
                 # X should be a tall and thin matrix (n>m). Otherwise, it will be transposed.
                 square = False
                 if X.shape[-2]<X.shape[-1]:
-                    X=X.transpose(0,1)
-                    X_grad=X_grad.transpose(0,1)
+                    X=X.transpose(-1,-2)
+                    X_grad=X_grad.transpose(-1,-2)
                 else:
                     if X.shape[-2]==X.shape[-1]:
                         square = True
